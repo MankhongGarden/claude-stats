@@ -1,0 +1,28 @@
+{
+  "name": "claude-stats",
+  "version": "1.0.0",
+  "description": "Claude Status Check - analyze your Claude usage as an MMORPG-style character sheet (radar chart of 6 stats + class + level). Local-only parsing, zero dependencies.",
+  "type": "commonjs",
+  "bin": {
+    "claude-stats": "bin/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MankhongGarden/claude-stats.git"
+  },
+  "homepage": "https://mankhonggarden.github.io/claude-stats/",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "stats",
+    "usage",
+    "character-sheet",
+    "radar-chart",
+    "cli"
+  ],
+  "author": "MankhongGarden",
+  "license": "MIT"
+}

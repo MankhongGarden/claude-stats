@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Status Check</title>
+<meta name="description" content="เช็คสเตตัสการใช้ Claude ของคุณ — radar 6 สาย + class + level สไตล์ MMORPG · ข้อมูลไม่ออกจากเครื่อง">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<script src="lib/scoring.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Kanit', sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #0d1f1a 0%, #060b09 70%);
+    color: #e8f5ee;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .hidden { display: none !important; }
+
+  /* ---------- landing ---------- */
+  .landing { width: 100%; max-width: 880px; }
+  .hero { text-align: center; margin-bottom: 36px; }
+  .hero .kicker { font-size: 12px; letter-spacing: 5px; color: #4ade80; font-weight: 300; text-transform: uppercase; margin-bottom: 10px; }
+  .hero h1 { font-size: 44px; font-weight: 800; line-height: 1.1;
+    background: linear-gradient(90deg, #6ee7b7, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { margin-top: 12px; font-size: 16px; color: #7da894; font-weight: 300; }
+  .entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .entry {
+    background: linear-gradient(160deg, #0f1d18 0%, #0a120e 100%);
+    border: 1px solid #1f4435; border-radius: 16px; padding: 28px;
+    box-shadow: 0 0 60px rgba(52, 211, 153, 0.08), inset 0 1px 0 rgba(255,255,255,0.04);
+    position: relative; overflow: hidden;
+  }
+  .entry::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #34d399, #fbbf24, transparent); }
+  .entry h2 { font-size: 20px; font-weight: 600; color: #e8f5ee; }
+  .entry h2 .badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+    color: #fbbf24; border: 1px solid #fbbf2455; border-radius: 4px; padding: 1px 6px; margin-left: 8px; vertical-align: middle; letter-spacing: 1px; }
+  .entry .sub { font-size: 13px; color: #7da894; font-weight: 300; margin: 6px 0 16px; }
+  .cmd-row { display: flex; gap: 8px; }
+  .cmd {
+    flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #6ee7b7;
+    background: #122019; border: 1px solid #1f4435; border-radius: 8px; padding: 11px 12px;
+    white-space: nowrap; overflow-x: auto;
+  }
+  .btn {
+    font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+    color: #0a120e; background: linear-gradient(90deg, #10b981, #6ee7b7);
+    border: none; border-radius: 8px; padding: 10px 16px; white-space: nowrap;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; color: #6ee7b7; border: 1px solid #1f4435; }
+  .btn.ghost:hover { border-color: #34d399; filter: none; }
+  .drop {
+    border: 1.5px dashed #1f4435; border-radius: 10px; padding: 22px 14px; text-align: center;
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .drop.over, .drop:hover { border-color: #34d399; background: rgba(52, 211, 153, 0.05); }
+  .drop .big { font-size: 15px; color: #c9e8d8; font-weight: 400; }
+  .drop .hint { font-size: 11.5px; color: #5d8371; font-weight: 300; margin-top: 4px; }
+  .privacy { font-size: 11.5px; color: #5d8371; font-weight: 300; margin-top: 12px; }
+  .privacy b { color: #4ade80; font-weight: 600; }
+  .steps { font-size: 12px; color: #7da894; font-weight: 300; margin-top: 12px; line-height: 1.7; }
+  .steps code { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6ee7b7; }
+  .demo-row { text-align: center; margin-top: 26px; }
+  .demo-row a { font-size: 13px; color: #fbbf24; text-decoration: none; border-bottom: 1px dotted #fbbf2466; }
+  .demo-row a:hover { border-bottom-style: solid; }
+
+  /* ---------- card (prototype design system) ---------- */
+  #cardView { width: 100%; max-width: 880px; }
+  .card {
+    width: 100%;
+    background: linear-gradient(160deg, #0f1d18 0%, #0a120e 100%);
+    border: 1px solid #1f4435;
+    border-radius: 16px;
+    padding: 36px 40px;
+    box-shadow: 0 0 60px rgba(52, 211, 153, 0.08), inset 0 1px 0 rgba(255,255,255,0.04);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #34d399, #fbbf24, transparent);
+  }
+  .header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .title { font-size: 13px; letter-spacing: 4px; color: #4ade80; font-weight: 300; text-transform: uppercase; }
+  .header-right { display: flex; gap: 14px; align-items: baseline; }
+  .src-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    color: #4ade80; border: 1px solid #1f4435; border-radius: 4px; padding: 2px 7px; }
+  .level { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #fbbf24; }
+  .class-name { font-size: 34px; font-weight: 800; line-height: 1.15; margin-bottom: 2px;
+    background: linear-gradient(90deg, #6ee7b7, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .class-sub { font-size: 15px; color: #7da894; font-weight: 300; margin-bottom: 20px; }
+  .body { display: grid; grid-template-columns: 420px 1fr; gap: 32px; align-items: center; }
+  .chart-wrap { position: relative; max-width: 100%; }
+  .chart-wrap canvas { max-width: 100%; height: auto; }
+  .stats-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .stats-list li { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 12px; }
+  .stat-label { font-size: 14px; font-weight: 600; color: #c9e8d8; }
+  .stat-label small { display: block; font-size: 10.5px; font-weight: 300; color: #5d8371; }
+  .bar { height: 7px; background: #122019; border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #10b981, #6ee7b7); }
+  .stat-val { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: #fbbf24; text-align: right; }
+  .footer { margin-top: 26px; padding-top: 18px; border-top: 1px solid #1a3a2c;
+    display: flex; justify-content: space-between; align-items: center; }
+  .totals { display: flex; gap: 26px; }
+  .totals div { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5d8371; }
+  .totals b { display: block; font-size: 17px; color: #e8f5ee; font-weight: 700; }
+  .brand { font-size: 11px; letter-spacing: 2px; color: #3d5c4c; }
+
+  .card-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(8px);
+    background: #0f1d18; border: 1px solid #34d399; color: #c9e8d8;
+    font-size: 13.5px; padding: 11px 20px; border-radius: 10px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast a { color: #fbbf24; }
+
+  @media (max-width: 920px) {
+    .body { grid-template-columns: 1fr; justify-items: center; }
+    .entry-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 32px; }
+    .card { padding: 26px 22px; }
+    .header { flex-wrap: wrap; gap: 6px; }
+    .footer { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .totals { flex-wrap: wrap; gap: 16px; }
+    .brand { word-break: break-all; }
+    .class-name { font-size: 27px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="landing" class="landing hidden">
+  <div class="hero">
+    <div class="kicker">MMORPG Character Sheet · For Claude Users</div>
+    <h1>Claude Status Check</h1>
+    <p>คุณใช้ Claude สายไหน? เช็คสเตตัส 6 ด้าน รับ class + level ของตัวเอง — ข้อมูลดิบไม่ออกจากเครื่องคุณ</p>
+  </div>
+  <div class="entry-grid">
+    <div class="entry">
+      <h2>สาย Claude Code</h2>
+      <div class="sub">รันคำสั่งเดียวใน terminal — สแกน transcript ในเครื่อง แล้วได้ลิงก์การ์ดทันที</div>
+      <div class="cmd-row">
+        <div class="cmd" id="npxCmd">npx github:MankhongGarden/claude-stats</div>
+        <button class="btn" id="copyCmdBtn" type="button">คัดลอก</button>
+      </div>
+      <div class="privacy"><b>Privacy:</b> สแกนในเครื่องเท่านั้น · ลิงก์แชร์มีแค่ตัวเลขสรุป 6 ค่า</div>
+    </div>
+    <div class="entry">
+      <h2>สาย claude.ai <span class="badge">BETA</span></h2>
+      <div class="sub">ใช้ไฟล์ export จาก claude.ai — วิเคราะห์ในเบราว์เซอร์นี้ทั้งหมด</div>
+      <div class="drop" id="dropZone">
+        <div class="big">วางไฟล์ conversations.json ที่นี่</div>
+        <div class="hint">หรือคลิกเพื่อเลือกไฟล์</div>
+      </div>
+      <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+      <div class="steps">ขอไฟล์: Settings → Privacy → Export data → ไฟล์จะส่งมาทางอีเมล แตก zip แล้วเลือก <code>conversations.json</code></div>
+      <div class="privacy"><b>Privacy:</b> ไฟล์ถูกอ่านในเครื่องเท่านั้น ไม่มีการอัปโหลด</div>
+    </div>
+  </div>
+  <div class="demo-row">
+    <a id="demoLink" href="#s=eyJ2IjoxLCJzcmMiOiJjbGkiLCJzdGF0cyI6eyJhdXRvbWF0b3IiOjkxLCJyZXNlYXJjaGVyIjo5MywiY29kZXIiOjkzLCJpbnRlZ3JhdG9yIjo3MSwid3JpdGVyIjo4OCwicGlsb3QiOjQ1fSwidG90YWxzIjp7InNlc3Npb25zIjo0MjYsInRvb2xDYWxscyI6NTc0MzcsInVzZXJNc2dzIjo1ODk3OH19">ดูการ์ดตัวอย่างก่อน →</a>
+  </div>
+</div>
+
+<div id="cardView" class="hidden">
+  <div class="card" id="cardNode">
+    <div class="header">
+      <div class="title">Claude Status · Character Sheet</div>
+      <div class="header-right">
+        <span class="src-badge" id="srcBadge"></span>
+        <span class="level">LV.<span id="lv"></span></span>
+      </div>
+    </div>
+    <div class="class-name" id="className"></div>
+    <div class="class-sub" id="classSub"></div>
+    <div class="body">
+      <div class="chart-wrap"><canvas id="radar" width="420" height="400"></canvas></div>
+      <ul class="stats-list" id="statsList"></ul>
+    </div>
+    <div class="footer">
+      <div class="totals" id="totals"></div>
+      <div class="brand">MANKHONGGARDEN.GITHUB.IO/CLAUDE-STATS</div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn" id="pngBtn" type="button">ดาวน์โหลดการ์ด PNG</button>
+    <button class="btn ghost" id="copyLinkBtn" type="button">คัดลอกลิงก์แชร์</button>
+    <button class="btn ghost" id="resetBtn" type="button">เริ่มใหม่</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var S = window.ClaudeScoring;
+  var landing = document.getElementById('landing');
+  var cardView = document.getElementById('cardView');
+  var toastEl = document.getElementById('toast');
+  var chart = null;
+  var current = null;
+  var toastTimer = null;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function toast(msg, issueLink) {
+    while (toastEl.firstChild) toastEl.removeChild(toastEl.firstChild);
+    toastEl.appendChild(document.createTextNode(msg));
+    if (issueLink) {
+      toastEl.appendChild(document.createTextNode(' '));
+      var a = el('a', null, 'แจ้งปัญหาบน GitHub');
+      a.href = 'https://github.com/MankhongGarden/claude-stats/issues';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      toastEl.appendChild(a);
+    }
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, issueLink ? 8000 : 3500);
+  }
+
+  function copyText(text, okMsg) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? okMsg : 'คัดลอกไม่สำเร็จ — copy เองได้เลย: ' + text);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  /* ---------- render ---------- */
+
+  function showLanding() {
+    cardView.classList.add('hidden');
+    landing.classList.remove('hidden');
+    current = null;
+  }
+
+  function renderCard(payload) {
+    current = payload;
+    landing.classList.add('hidden');
+    cardView.classList.remove('hidden');
+
+    var stats = payload.stats;
+    var totals = payload.totals || {};
+    var isWeb = payload.src === 'web';
+    var topKey = S.topAxis(stats);
+    var cls = S.CLASSES[topKey];
+    var effort = isWeb ? (Number(totals.userMsgs) || 0) * 4 : (Number(totals.toolCalls) || 0);
+    var lv = S.level(effort);
+
+    document.getElementById('className').textContent = cls[0];
+    document.getElementById('classSub').textContent = cls[1];
+    document.getElementById('lv').textContent = String(lv);
+    document.getElementById('srcBadge').textContent = isWeb ? 'WEB · BETA' : 'CLI';
+
+    var list = document.getElementById('statsList');
+    while (list.firstChild) list.removeChild(list.firstChild);
+    S.AXES.forEach(function (k) {
+      var li = document.createElement('li');
+      var label = el('span', 'stat-label', S.META[k].en);
+      label.appendChild(el('small', null, S.META[k].th + ' · ' + S.META[k].desc));
+      var bar = el('span', 'bar');
+      var fill = el('i');
+      fill.style.width = stats[k] + '%';
+      bar.appendChild(fill);
+      li.appendChild(label);
+      li.appendChild(bar);
+      li.appendChild(el('span', 'stat-val', String(stats[k])));
+      list.appendChild(li);
+    });
+
+    var totalsEl = document.getElementById('totals');
+    while (totalsEl.firstChild) totalsEl.removeChild(totalsEl.firstChild);
+    var rows = isWeb
+      ? [['CHATS', totals.sessions], ['MESSAGES', totals.userMsgs]]
+      : [['SESSIONS', totals.sessions], ['TOOL CALLS', totals.toolCalls], ['MESSAGES', totals.userMsgs]];
+    rows.forEach(function (row) {
+      var d = el('div', null, row[0]);
+      d.appendChild(el('b', null, (Number(row[1]) || 0).toLocaleString()));
+      totalsEl.appendChild(d);
+    });
+
+    if (chart) { chart.destroy(); chart = null; }
+    chart = new Chart(document.getElementById('radar'), {
+      type: 'radar',
+      data: {
+        labels: S.AXES.map(function (k) { return S.META[k].en; }),
+        datasets: [{
+          data: S.AXES.map(function (k) { return stats[k]; }),
+          fill: true,
+          backgroundColor: 'rgba(52, 211, 153, 0.18)',
+          borderColor: '#34d399',
+          borderWidth: 2,
+          pointBackgroundColor: '#fbbf24',
+          pointBorderColor: '#fbbf24',
+          pointRadius: 4,
+        }],
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { display: false, stepSize: 25 },
+            grid: { color: 'rgba(110, 231, 183, 0.12)' },
+            angleLines: { color: 'rgba(110, 231, 183, 0.12)' },
+            pointLabels: { color: '#c9e8d8', font: { family: 'Kanit', size: 13, weight: 600 } },
+          },
+        },
+      },
+    });
+  }
+
+  /* ---------- routing ---------- */
+
+  function route() {
+    var h = window.location.hash || '';
+    if (h.indexOf('#s=') === 0) {
+      var payload = S.decodeShare(h.slice(3));
+      if (payload) { renderCard(payload); return; }
+      toast('ลิงก์ไม่ถูกต้องหรือเสียหาย — กลับสู่หน้าแรก');
+    }
+    showLanding();
+  }
+
+  /* ---------- claude.ai export parser (BETA, defensive) ---------- */
+
+  function msgText(m) {
+    if (!m || typeof m !== 'object') return '';
+    if (typeof m.text === 'string' && m.text) return m.text;
+    if (Array.isArray(m.content)) {
+      return m.content.map(function (c) {
+        return (c && typeof c.text === 'string') ? c.text : '';
+      }).join('\n');
+    }
+    return '';
+  }
+
+  var RX_RESEARCH = /\?|หา|ค้น|search|why|ทำไม|คือ|https?:\/\//i;
+  var RX_AUTO = /script|automation|cron|bot|workflow|อัตโนมัติ/i;
+  var RX_INTEG = /api|integration|mcp|webhook|เชื่อมต่อ/i;
+  var RX_PILOT = /browser|selenium|playwright|เบราว์เซอร์/i;
+
+  function parseClaudeExport(json) {
+    var convs = null;
+    if (Array.isArray(json)) convs = json;
+    else if (json && typeof json === 'object' && Array.isArray(json.conversations)) convs = json.conversations;
+    if (!convs) return null;
+
+    var raw = { automator: 0, researcher: 0, coder: 0, integrator: 0, writer: 0, pilot: 0 };
+    var msgCount = 0;
+    var assistantChars = 0;
+
+    convs.forEach(function (conv) {
+      var msgs = (conv && Array.isArray(conv.chat_messages)) ? conv.chat_messages : [];
+      msgs.forEach(function (m) {
+        var text = msgText(m);
+        var sender = m && m.sender;
+        msgCount++;
+        if (sender === 'assistant') {
+          assistantChars += text.length;
+          var fences = (text.match(/```/g) || []).length;
+          raw.coder += Math.floor(fences / 2);
+        }
+        if (sender === 'human' && RX_RESEARCH.test(text)) raw.researcher++;
+        if (RX_AUTO.test(text)) raw.automator++;
+        if (RX_INTEG.test(text)) raw.integrator++;
+        if (RX_PILOT.test(text)) raw.pilot++;
+      });
+    });
+
+    raw.writer = assistantChars / 4000;
+    return {
+      raw: raw,
+      totals: { sessions: convs.length, toolCalls: 0, userMsgs: msgCount },
+    };
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onerror = function () { toast('อ่านไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง'); };
+    reader.onload = function () {
+      var parsed = null;
+      try {
+        var json = JSON.parse(String(reader.result));
+        parsed = parseClaudeExport(json);
+      } catch (e) {
+        parsed = null;
+      }
+      if (!parsed) {
+        toast('รูปแบบไฟล์ไม่ตรงที่คาด (parser ยังเป็น beta)', true);
+        return;
+      }
+      var stats = S.scoreAxes(parsed.raw, 'web');
+      var encoded = S.encodeShare({ v: 1, src: 'web', stats: stats, totals: parsed.totals });
+      window.location.hash = '#s=' + encoded;
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  /* ---------- wire up ---------- */
+
+  document.getElementById('copyCmdBtn').addEventListener('click', function () {
+    copyText('npx github:MankhongGarden/claude-stats', 'คัดลอกคำสั่งแล้ว — ไปวางใน terminal ได้เลย');
+  });
+
+  var dropZone = document.getElementById('dropZone');
+  var fileInput = document.getElementById('fileInput');
+  dropZone.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () {
+    handleFile(fileInput.files && fileInput.files[0]);
+    fileInput.value = '';
+  });
+  ['dragover', 'dragenter'].forEach(function (ev) {
+    dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.remove('over'); });
+  });
+  dropZone.addEventListener('drop', function (e) {
+    var files = e.dataTransfer && e.dataTransfer.files;
+    handleFile(files && files[0]);
+  });
+
+  document.getElementById('copyLinkBtn').addEventListener('click', function () {
+    copyText(window.location.href, 'คัดลอกลิงก์แล้ว — ในลิงก์มีแค่ตัวเลขสรุป 6 ค่า');
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    showLanding();
+  });
+
+  document.getElementById('pngBtn').addEventListener('click', function () {
+    if (!window.htmlToImage) { toast('โหลดตัวสร้างรูปไม่สำเร็จ (CDN) ลอง refresh'); return; }
+    var node = document.getElementById('cardNode');
+    var topKey = current ? S.topAxis(current.stats) : S.AXES[0];
+    var effort = current
+      ? (current.src === 'web' ? (Number(current.totals.userMsgs) || 0) * 4 : (Number(current.totals.toolCalls) || 0))
+      : 0;
+    var slug = S.CLASSES[topKey][0].toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    var filename = 'claude-status-' + slug + '-lv' + S.level(effort) + '.png';
+    window.htmlToImage.toPng(node, { pixelRatio: 2 })
+      .then(function (dataUrl) {
+        var a = document.createElement('a');
+        a.download = filename;
+        a.href = dataUrl;
+        a.click();
+        toast('ดาวน์โหลดการ์ดแล้ว');
+      })
+      .catch(function () { toast('สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง'); });
+  });
+
+  window.addEventListener('hashchange', route);
+
+  if (!S) {
+    toast('โหลด lib/scoring.js ไม่สำเร็จ');
+    showLanding();
+  } else {
+    route();
+  }
+})();
+</script>
+</body>
+</html>
