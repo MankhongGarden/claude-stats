@@ -114,6 +114,14 @@
 
   .card-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
 
+  .lang-toggle {
+    position: fixed; top: 16px; right: 18px; z-index: 60;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    color: #4ade80; background: #0f1d18; border: 1px solid #1f4435; border-radius: 8px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  .lang-toggle:hover { border-color: #34d399; }
+
   /* ---------- toast ---------- */
   .toast {
     position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(8px);
@@ -140,32 +148,34 @@
 </head>
 <body>
 
+<button class="lang-toggle" id="langBtn" type="button">EN</button>
+
 <div id="landing" class="landing hidden">
   <div class="hero">
     <div class="kicker">MMORPG Character Sheet · For Claude Users</div>
     <h1>Claude Status Check</h1>
-    <p>คุณใช้ Claude สายไหน? เช็คสเตตัส 6 ด้าน รับ class + level ของตัวเอง — ข้อมูลดิบไม่ออกจากเครื่องคุณ</p>
+    <p id="heroDesc">คุณใช้ Claude สายไหน? เช็คสเตตัส 6 ด้าน รับ class + level ของตัวเอง — ข้อมูลดิบไม่ออกจากเครื่องคุณ</p>
   </div>
   <div class="entry-grid">
     <div class="entry">
-      <h2>สาย Claude Code</h2>
-      <div class="sub">รันคำสั่งเดียวใน terminal — สแกน transcript ในเครื่อง แล้วได้ลิงก์การ์ดทันที</div>
+      <h2 id="entry1Title">สาย Claude Code</h2>
+      <div class="sub" id="entry1Sub">รันคำสั่งเดียวใน terminal — สแกน transcript ในเครื่อง แล้วได้ลิงก์การ์ดทันที</div>
       <div class="cmd-row">
         <div class="cmd" id="npxCmd">npx github:MankhongGarden/claude-stats</div>
         <button class="btn" id="copyCmdBtn" type="button">คัดลอก</button>
       </div>
-      <div class="privacy"><b>Privacy:</b> สแกนในเครื่องเท่านั้น · ลิงก์แชร์มีแค่ตัวเลขสรุป 6 ค่า</div>
+      <div class="privacy"><b>Privacy:</b> <span id="privacy1Text">สแกนในเครื่องเท่านั้น · ลิงก์แชร์มีแค่ตัวเลขสรุป 6 ค่า</span></div>
     </div>
     <div class="entry">
-      <h2>สาย claude.ai <span class="badge">BETA</span></h2>
-      <div class="sub">ใช้ไฟล์ export จาก claude.ai — วิเคราะห์ในเบราว์เซอร์นี้ทั้งหมด</div>
+      <h2><span id="entry2Title">สาย claude.ai</span> <span class="badge">BETA</span></h2>
+      <div class="sub" id="entry2Sub">ใช้ไฟล์ export จาก claude.ai — วิเคราะห์ในเบราว์เซอร์นี้ทั้งหมด</div>
       <div class="drop" id="dropZone">
-        <div class="big">วางไฟล์ conversations.json ที่นี่</div>
-        <div class="hint">หรือคลิกเพื่อเลือกไฟล์</div>
+        <div class="big" id="dropBig">วางไฟล์ conversations.json ที่นี่</div>
+        <div class="hint" id="dropHint">หรือคลิกเพื่อเลือกไฟล์</div>
       </div>
       <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
-      <div class="steps">ขอไฟล์: Settings → Privacy → Export data → ไฟล์จะส่งมาทางอีเมล แตก zip แล้วเลือก <code>conversations.json</code></div>
-      <div class="privacy"><b>Privacy:</b> ไฟล์ถูกอ่านในเครื่องเท่านั้น ไม่มีการอัปโหลด</div>
+      <div class="steps" id="steps">ขอไฟล์: Settings → Privacy → Export data → ไฟล์จะส่งมาทางอีเมล แตก zip แล้วเลือก <code>conversations.json</code></div>
+      <div class="privacy"><b>Privacy:</b> <span id="privacy2Text">ไฟล์ถูกอ่านในเครื่องเท่านั้น ไม่มีการอัปโหลด</span></div>
     </div>
   </div>
   <div class="demo-row">
@@ -213,6 +223,97 @@
   var current = null;
   var toastTimer = null;
 
+  /* ---------- i18n ---------- */
+
+  var STR = {
+    th: {
+      heroDesc: 'คุณใช้ Claude สายไหน? เช็คสเตตัส 6 ด้าน รับ class + level ของตัวเอง — ข้อมูลดิบไม่ออกจากเครื่องคุณ',
+      entry1Title: 'สาย Claude Code',
+      entry1Sub: 'รันคำสั่งเดียวใน terminal — สแกน transcript ในเครื่อง แล้วได้ลิงก์การ์ดทันที',
+      privacy1Text: 'สแกนในเครื่องเท่านั้น · ลิงก์แชร์มีแค่ตัวเลขสรุป 6 ค่า',
+      entry2Title: 'สาย claude.ai',
+      entry2Sub: 'ใช้ไฟล์ export จาก claude.ai — วิเคราะห์ในเบราว์เซอร์นี้ทั้งหมด',
+      dropBig: 'วางไฟล์ conversations.json ที่นี่',
+      dropHint: 'หรือคลิกเพื่อเลือกไฟล์',
+      steps: 'ขอไฟล์: Settings → Privacy → Export data → ไฟล์จะส่งมาทางอีเมล แตก zip แล้วเลือก ',
+      privacy2Text: 'ไฟล์ถูกอ่านในเครื่องเท่านั้น ไม่มีการอัปโหลด',
+      demoLink: 'ดูการ์ดตัวอย่างก่อน →',
+      copyCmdBtn: 'คัดลอก',
+      pngBtn: 'ดาวน์โหลดการ์ด PNG',
+      copyLinkBtn: 'คัดลอกลิงก์แชร์',
+      resetBtn: 'เริ่มใหม่',
+      badLink: 'ลิงก์ไม่ถูกต้องหรือเสียหาย — กลับสู่หน้าแรก',
+      copiedCmd: 'คัดลอกคำสั่งแล้ว — ไปวางใน terminal ได้เลย',
+      copiedLink: 'คัดลอกลิงก์แล้ว — ในลิงก์มีแค่ตัวเลขสรุป 6 ค่า',
+      copyFail: 'คัดลอกไม่สำเร็จ — copy เองได้เลย: ',
+      readFail: 'อ่านไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง',
+      badFormat: 'รูปแบบไฟล์ไม่ตรงที่คาด (parser ยังเป็น beta)',
+      issueLink: 'แจ้งปัญหาบน GitHub',
+      cdnFail: 'โหลดตัวสร้างรูปไม่สำเร็จ (CDN) ลอง refresh',
+      pngDone: 'ดาวน์โหลดการ์ดแล้ว',
+      pngFail: 'สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง',
+      scoringFail: 'โหลด lib/scoring.js ไม่สำเร็จ'
+    },
+    en: {
+      heroDesc: 'Which Claude build are you? Check your 6 stats and get your class + level — raw data never leaves your machine.',
+      entry1Title: 'Claude Code users',
+      entry1Sub: 'One command in your terminal — scans local transcripts, prints your card and a share link.',
+      privacy1Text: 'Scans locally only · the share link carries just 6 aggregate numbers',
+      entry2Title: 'claude.ai users',
+      entry2Sub: 'Use your claude.ai data export — analyzed entirely in this browser.',
+      dropBig: 'Drop conversations.json here',
+      dropHint: 'or click to choose a file',
+      steps: 'Get the file: Settings → Privacy → Export data → it arrives by email; unzip and pick ',
+      privacy2Text: 'The file is read locally — nothing is uploaded',
+      demoLink: 'See a sample card first →',
+      copyCmdBtn: 'Copy',
+      pngBtn: 'Download card PNG',
+      copyLinkBtn: 'Copy share link',
+      resetBtn: 'Start over',
+      badLink: 'Invalid or corrupted link — back to home',
+      copiedCmd: 'Command copied — paste it in your terminal',
+      copiedLink: 'Link copied — it carries only the 6 aggregate numbers',
+      copyFail: 'Copy failed — grab it manually: ',
+      readFail: 'Could not read the file, please try again',
+      badFormat: 'Unexpected file format (the parser is still beta)',
+      issueLink: 'Report on GitHub',
+      cdnFail: 'Image library failed to load (CDN) — try refreshing',
+      pngDone: 'Card downloaded',
+      pngFail: 'Could not generate the image, please try again',
+      scoringFail: 'Failed to load lib/scoring.js'
+    }
+  };
+
+  var lang = (function () {
+    try {
+      var saved = localStorage.getItem('cs_lang');
+      if (saved === 'th' || saved === 'en') return saved;
+    } catch (e) {}
+    return (navigator.language || '').toLowerCase().indexOf('th') === 0 ? 'th' : 'en';
+  })();
+
+  function t(key) {
+    return (STR[lang] && STR[lang][key]) || STR.th[key] || key;
+  }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    ['heroDesc', 'entry1Title', 'entry1Sub', 'privacy1Text', 'entry2Title', 'entry2Sub',
+      'dropBig', 'dropHint', 'privacy2Text', 'demoLink',
+      'copyCmdBtn', 'pngBtn', 'copyLinkBtn', 'resetBtn'].forEach(function (id) {
+      var node = document.getElementById(id);
+      if (node) node.textContent = t(id);
+    });
+    var steps = document.getElementById('steps');
+    while (steps.firstChild) steps.removeChild(steps.firstChild);
+    steps.appendChild(document.createTextNode(t('steps')));
+    var code = document.createElement('code');
+    code.textContent = 'conversations.json';
+    steps.appendChild(code);
+    document.getElementById('langBtn').textContent = lang === 'th' ? 'EN' : 'ไทย';
+    if (current) renderCard(current);
+  }
+
   function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -225,7 +326,7 @@
     toastEl.appendChild(document.createTextNode(msg));
     if (issueLink) {
       toastEl.appendChild(document.createTextNode(' '));
-      var a = el('a', null, 'แจ้งปัญหาบน GitHub');
+      var a = el('a', null, t('issueLink'));
       a.href = 'https://github.com/MankhongGarden/claude-stats/issues';
       a.target = '_blank';
       a.rel = 'noopener';
@@ -247,7 +348,7 @@
       var ok = false;
       try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
       document.body.removeChild(ta);
-      toast(ok ? okMsg : 'คัดลอกไม่สำเร็จ — copy เองได้เลย: ' + text);
+      toast(ok ? okMsg : t('copyFail') + text);
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fallback);
@@ -278,7 +379,7 @@
     var lv = S.level(effort);
 
     document.getElementById('className').textContent = cls[0];
-    document.getElementById('classSub').textContent = cls[1];
+    document.getElementById('classSub').textContent = (lang === 'th' ? cls[1] : cls[2]) || cls[1];
     document.getElementById('lv').textContent = String(lv);
     document.getElementById('srcBadge').textContent = isWeb ? 'WEB · BETA' : 'CLI';
 
@@ -287,7 +388,9 @@
     S.AXES.forEach(function (k) {
       var li = document.createElement('li');
       var label = el('span', 'stat-label', S.META[k].en);
-      label.appendChild(el('small', null, S.META[k].th + ' · ' + S.META[k].desc));
+      label.appendChild(el('small', null, lang === 'th'
+        ? S.META[k].th + ' · ' + S.META[k].desc
+        : S.META[k].descEn || S.META[k].desc));
       var bar = el('span', 'bar');
       var fill = el('i');
       fill.style.width = stats[k] + '%';
@@ -349,7 +452,7 @@
     if (h.indexOf('#s=') === 0) {
       var payload = S.decodeShare(h.slice(3));
       if (payload) { renderCard(payload); return; }
-      toast('ลิงก์ไม่ถูกต้องหรือเสียหาย — กลับสู่หน้าแรก');
+      toast(t('badLink'));
     }
     showLanding();
   }
@@ -410,7 +513,7 @@
   function handleFile(file) {
     if (!file) return;
     var reader = new FileReader();
-    reader.onerror = function () { toast('อ่านไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง'); };
+    reader.onerror = function () { toast(t('readFail')); };
     reader.onload = function () {
       var parsed = null;
       try {
@@ -420,7 +523,7 @@
         parsed = null;
       }
       if (!parsed) {
-        toast('รูปแบบไฟล์ไม่ตรงที่คาด (parser ยังเป็น beta)', true);
+        toast(t('badFormat'), true);
         return;
       }
       var stats = S.scoreAxes(parsed.raw, 'web');
@@ -433,7 +536,7 @@
   /* ---------- wire up ---------- */
 
   document.getElementById('copyCmdBtn').addEventListener('click', function () {
-    copyText('npx github:MankhongGarden/claude-stats', 'คัดลอกคำสั่งแล้ว — ไปวางใน terminal ได้เลย');
+    copyText('npx github:MankhongGarden/claude-stats', t('copiedCmd'));
   });
 
   var dropZone = document.getElementById('dropZone');
@@ -455,7 +558,7 @@
   });
 
   document.getElementById('copyLinkBtn').addEventListener('click', function () {
-    copyText(window.location.href, 'คัดลอกลิงก์แล้ว — ในลิงก์มีแค่ตัวเลขสรุป 6 ค่า');
+    copyText(window.location.href, t('copiedLink'));
   });
 
   document.getElementById('resetBtn').addEventListener('click', function () {
@@ -466,7 +569,7 @@
   });
 
   document.getElementById('pngBtn').addEventListener('click', function () {
-    if (!window.htmlToImage) { toast('โหลดตัวสร้างรูปไม่สำเร็จ (CDN) ลอง refresh'); return; }
+    if (!window.htmlToImage) { toast(t('cdnFail')); return; }
     var node = document.getElementById('cardNode');
     var topKey = current ? S.topAxis(current.stats) : S.AXES[0];
     var effort = current
@@ -480,15 +583,22 @@
         a.download = filename;
         a.href = dataUrl;
         a.click();
-        toast('ดาวน์โหลดการ์ดแล้ว');
+        toast(t('pngDone'));
       })
-      .catch(function () { toast('สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง'); });
+      .catch(function () { toast(t('pngFail')); });
+  });
+
+  document.getElementById('langBtn').addEventListener('click', function () {
+    lang = lang === 'th' ? 'en' : 'th';
+    try { localStorage.setItem('cs_lang', lang); } catch (e) {}
+    applyLang();
   });
 
   window.addEventListener('hashchange', route);
 
+  applyLang();
   if (!S) {
-    toast('โหลด lib/scoring.js ไม่สำเร็จ');
+    toast(t('scoringFail'));
     showLanding();
   } else {
     route();

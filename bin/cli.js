@@ -213,6 +213,7 @@ async function main() {
   lines.push('  CLAUDE STATUS CHECK');
   lines.push('  ' + '-'.repeat(46));
   lines.push('  ' + cls[0] + '  LV ' + lv);
+  lines.push('  ' + (cls[2] || cls[1]));
   lines.push('  ' + cls[1]);
   lines.push('  ' + '-'.repeat(46));
   for (const axis of scoring.AXES) {
