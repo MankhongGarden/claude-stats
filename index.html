@@ -178,7 +178,7 @@
       <h2 id="entry1Title">สาย Claude Code</h2>
       <div class="sub" id="entry1Sub">รันคำสั่งเดียวใน terminal — สแกน transcript ในเครื่อง แล้วได้ลิงก์การ์ดทันที</div>
       <div class="cmd-row">
-        <div class="cmd" id="npxCmd">npx github:MankhongGarden/claude-stats</div>
+        <div class="cmd" id="npxCmd">npx claude-character-sheet</div>
         <button class="btn" id="copyCmdBtn" type="button">คัดลอก</button>
       </div>
       <div class="steps" id="nodeNote">Node 18+ · อ่าน source ได้ ~250 บรรทัด</div>
@@ -640,7 +640,7 @@
   /* ---------- wire up ---------- */
 
   document.getElementById('copyCmdBtn').addEventListener('click', function () {
-    copyText('npx github:MankhongGarden/claude-stats', t('copiedCmd'));
+    copyText('npx claude-character-sheet', t('copiedCmd'));
   });
 
   var dropZone = document.getElementById('dropZone');

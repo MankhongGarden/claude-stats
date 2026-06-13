@@ -18,12 +18,14 @@ claude, claude-code, anthropic, cli, github-pages, radar-chart, character-sheet,
 ### Path 1 — Claude Code users (CLI)
 
 ```bash
-npx github:MankhongGarden/claude-stats
-# or, once published to npm:
 npx claude-character-sheet
+# or straight from GitHub (no npm):
+npx github:MankhongGarden/claude-stats
 # pin to an immutable release for reproducibility:
 npx github:MankhongGarden/claude-stats#v1.0.0
 ```
+
+[![npm](https://img.shields.io/npm/v/claude-character-sheet)](https://www.npmjs.com/package/claude-character-sheet)
 
 Scans your local Claude Code transcripts (`~/.claude/projects` or `$CLAUDE_CONFIG_DIR/projects`), prints a terminal stat card, and gives you a share URL that opens the web card.
 
