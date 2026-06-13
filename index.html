@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claude Status Check</title>
+<title>Claude Character Sheet — your Claude usage as an MMORPG stat card</title>
 <meta name="description" content="เช็คสเตตัสการใช้ Claude ของคุณ — radar 6 สาย + class + level สไตล์ MMORPG · ข้อมูลไม่ออกจากเครื่อง">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a120e'/%3E%3Cpolygon points='50,15 80,35 72,75 28,75 20,35' fill='none' stroke='%2334d399' stroke-width='6'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="lib/chart.umd.min.js"></script>
 <script src="lib/html-to-image.min.js"></script>
+<script src="lib/fflate.min.js"></script>
 <script src="lib/scoring.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -179,13 +180,13 @@
         <div class="big" id="dropBig">วางไฟล์ conversations.json ที่นี่</div>
         <div class="hint" id="dropHint">หรือคลิกเพื่อเลือกไฟล์</div>
       </div>
-      <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+      <input type="file" id="fileInput" accept=".zip,.dms,.json,application/json,application/zip" class="hidden">
       <div class="steps" id="steps">ขอไฟล์: Settings → Privacy → Export data → ไฟล์จะส่งมาทางอีเมล แตก zip แล้วเลือก <code>conversations.json</code></div>
       <div class="privacy"><b>Privacy:</b> <span id="privacy2Text">ไฟล์ถูกอ่านในเครื่องเท่านั้น ไม่มีการอัปโหลด</span></div>
     </div>
   </div>
   <div class="demo-row">
-    <a id="demoLink" href="#s=eyJ2IjoxLCJzcmMiOiJjbGkiLCJzdGF0cyI6eyJhdXRvbWF0b3IiOjkxLCJyZXNlYXJjaGVyIjo5MywiY29kZXIiOjkzLCJpbnRlZ3JhdG9yIjo3MSwid3JpdGVyIjo4OCwicGlsb3QiOjQ1fSwidG90YWxzIjp7InNlc3Npb25zIjo0MjYsInRvb2xDYWxscyI6NTc0MzcsInVzZXJNc2dzIjo1ODk3OH19">ดูการ์ดตัวอย่างก่อน →</a>
+    <a id="demoLink" href="#s=eyJ2IjoxLCJzcmMiOiJjbGkiLCJzdGF0cyI6eyJhdXRvbWF0b3IiOjkxLCJyZXNlYXJjaGVyIjo5NCwiY29kZXIiOjkzLCJpbnRlZ3JhdG9yIjo3MCwid3JpdGVyIjo4OCwicGlsb3QiOjUxfSwidG90YWxzIjp7InNlc3Npb25zIjo0MzQsInRvb2xDYWxscyI6NTc2MTQsInVzZXJNc2dzIjo2ODQ5MX19">ดูการ์ดตัวอย่างก่อน →</a>
   </div>
 </div>
 
@@ -242,9 +243,9 @@
       privacy1Text: 'ไฟล์ในเครื่องถูกอ่านในเครื่องเท่านั้น ไม่อัปโหลด · ลิงก์แชร์มีแค่คะแนนสรุป',
       entry2Title: 'สาย claude.ai',
       entry2Sub: 'ใช้ไฟล์ export จาก claude.ai — วิเคราะห์ในเบราว์เซอร์นี้ทั้งหมด',
-      dropBig: 'วางไฟล์ conversations.json ที่นี่',
-      dropHint: 'หรือคลิกเพื่อเลือกไฟล์',
-      steps: 'ขอไฟล์: Settings → Privacy → Export data → ไฟล์จะส่งมาทางอีเมล แตก zip แล้วเลือก ',
+      dropBig: 'วางไฟล์ export ที่นี่ (.zip ได้เลย)',
+      dropHint: 'หรือคลิกเพื่อเลือกไฟล์ — ไม่ต้องแตก zip',
+      steps: 'ขอไฟล์: Settings → Privacy → Export data → ไฟล์ zip มาทางอีเมล ลากทั้งไฟล์มาวางได้เลย (หรือไฟล์ ',
       privacy2Text: 'ไฟล์ถูกอ่านในเครื่องเท่านั้น ไม่มีการอัปโหลด',
       demoLink: 'ดูการ์ดตัวอย่างก่อน →',
       copyCmdBtn: 'คัดลอก',
@@ -252,6 +253,7 @@
       copyLinkBtn: 'คัดลอกลิงก์แชร์',
       resetBtn: 'สร้างการ์ดของคุณ →',
       webEstimate: '⚠ ประเมินคร่าวๆ จากข้อความ · เทียบกับการ์ดสาย CLI ไม่ได้',
+      hybridNote: 'สายผสม — คะแนนสูงสุดเสมอกันสองด้าน',
       badLink: 'ลิงก์ไม่ถูกต้องหรือเสียหาย — กลับสู่หน้าแรก',
       copiedCmd: 'คัดลอกคำสั่งแล้ว — ไปวางใน terminal ได้เลย',
       copiedLink: 'คัดลอกลิงก์แล้ว — ในลิงก์มีแค่คะแนน 6 ค่า + ยอดรวม 3 ตัว (session · tool call · ข้อความ)',
@@ -274,9 +276,9 @@
       privacy1Text: 'Local files are read on your machine and never uploaded · the share link carries only summary scores',
       entry2Title: 'claude.ai users',
       entry2Sub: 'Use your claude.ai data export — analyzed entirely in this browser.',
-      dropBig: 'Drop conversations.json here',
-      dropHint: 'or click to choose a file',
-      steps: 'Get the file: Settings → Privacy → Export data → it arrives by email; unzip and pick ',
+      dropBig: 'Drop your export here (.zip works)',
+      dropHint: 'or click to choose — no need to unzip',
+      steps: 'Get the file: Settings → Privacy → Export data → a .zip arrives by email; drop the whole zip here (or the ',
       privacy2Text: 'The file is read locally — nothing is uploaded',
       demoLink: 'See a sample card first →',
       copyCmdBtn: 'Copy',
@@ -284,6 +286,7 @@
       copyLinkBtn: 'Copy share link',
       resetBtn: 'Make your own →',
       webEstimate: '⚠ Rough estimate inferred from text · not comparable to CLI cards',
+      hybridNote: 'Hybrid build — your top two axes are tied',
       badLink: 'Invalid or corrupted link — back to home',
       copiedCmd: 'Command copied — paste it in your terminal',
       copiedLink: 'Link copied — it carries only the 6 scores + 3 totals (sessions · tool calls · messages)',
@@ -324,6 +327,7 @@
     var code = document.createElement('code');
     code.textContent = 'conversations.json';
     steps.appendChild(code);
+    steps.appendChild(document.createTextNode(lang === 'th' ? ' ที่อยู่ข้างใน)' : ' inside it)'));
     document.getElementById('langBtn').textContent = lang === 'th' ? 'EN' : 'ไทย';
     if (current) renderCard(current);
   }
@@ -392,8 +396,16 @@
     var effort = isWeb ? (Number(totals.userMsgs) || 0) * 4 : (Number(totals.toolCalls) || 0);
     var lv = S.level(effort);
 
-    document.getElementById('className').textContent = cls[0];
-    document.getElementById('classSub').textContent = isWeb ? t('webEstimate') : ((lang === 'th' ? cls[1] : cls[2]) || cls[1]);
+    var topScore = stats[topKey];
+    var tied = S.AXES.filter(function (k) { return stats[k] === topScore; });
+    var nameText = cls[0];
+    if (tied.length > 1) {
+      nameText = tied.slice(0, 2).map(function (k) { return S.CLASSES[k][0]; }).join(' / ');
+    }
+    document.getElementById('className').textContent = nameText;
+    document.getElementById('classSub').textContent = isWeb
+      ? t('webEstimate')
+      : (tied.length > 1 ? t('hybridNote') : ((lang === 'th' ? cls[1] : cls[2]) || cls[1]));
     document.getElementById('lv').textContent = String(lv);
     document.getElementById('srcBadge').textContent = isWeb ? 'WEB · BETA' : 'CLI';
 
@@ -528,27 +540,44 @@
     };
   }
 
+  function finishParse(parsed) {
+    if (!parsed) { toast(t('badFormat'), true); return; }
+    var stats = S.scoreAxes(parsed.raw, 'web');
+    var encoded = S.encodeShare({ v: 1, src: 'web', stats: stats, totals: parsed.totals });
+    window.location.hash = '#s=' + encoded;
+  }
+
+  function parseJsonText(text) {
+    try { return parseClaudeExport(JSON.parse(text)); } catch (e) { return null; }
+  }
+
+  // claude.ai exports arrive as a .zip (sometimes a .dms = renamed .zip). Accept them
+  // directly so the user never has to unzip — find conversations.json inside, in-browser.
+  function handleZip(buf) {
+    if (!window.fflate || !fflate.unzipSync) { toast(t('badFormat'), true); return; }
+    var files;
+    try { files = fflate.unzipSync(new Uint8Array(buf)); } catch (e) { toast(t('badFormat'), true); return; }
+    var key = Object.keys(files).filter(function (n) { return /conversations\.json$/i.test(n); })[0]
+      || Object.keys(files).filter(function (n) { return /\.json$/i.test(n); })[0];
+    if (!key) { toast(t('badFormat'), true); return; }
+    var text;
+    try { text = fflate.strFromU8(files[key]); } catch (e) { toast(t('badFormat'), true); return; }
+    finishParse(parseJsonText(text));
+  }
+
   function handleFile(file) {
     if (!file) return;
+    var name = (file.name || '').toLowerCase();
+    var isZip = /\.(zip|dms)$/.test(name);
     var reader = new FileReader();
     reader.onerror = function () { toast(t('readFail')); };
-    reader.onload = function () {
-      var parsed = null;
-      try {
-        var json = JSON.parse(String(reader.result));
-        parsed = parseClaudeExport(json);
-      } catch (e) {
-        parsed = null;
-      }
-      if (!parsed) {
-        toast(t('badFormat'), true);
-        return;
-      }
-      var stats = S.scoreAxes(parsed.raw, 'web');
-      var encoded = S.encodeShare({ v: 1, src: 'web', stats: stats, totals: parsed.totals });
-      window.location.hash = '#s=' + encoded;
-    };
-    reader.readAsText(file, 'utf-8');
+    if (isZip) {
+      reader.onload = function () { handleZip(reader.result); };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = function () { finishParse(parseJsonText(String(reader.result))); };
+      reader.readAsText(file, 'utf-8');
+    }
   }
 
   /* ---------- wire up ---------- */
