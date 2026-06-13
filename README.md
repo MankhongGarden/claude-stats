@@ -66,20 +66,23 @@ Each tool call (CLI) or message heuristic (web) is classified into one of 6 axes
 | WRITER | prose output volume | assistant text chars / 4000 |
 | PILOT | driving a real browser | chrome-devtools / playwright MCP tools |
 
-Score per axis: `min(100, round(100 * sqrt(x / REF)))` — a square-root curve, so early activity climbs fast and the top end is hard to max.
+**CLI** uses fixed anchors so two Claude Code users' cards are directly comparable:
+`score = min(100, round(100 * sqrt(x / REF)))` — a square-root curve, so early activity climbs fast and the top end is hard to max.
 
-REF anchors (what 100 means), v1:
+REF anchors (what 100 means on the CLI path), v1:
 
-| axis | REF (CLI units) | REF (web units) |
-|---|---|---|
-| automator | 25000 | 1200 |
-| researcher | 15000 | 1500 |
-| coder | 15000 | 800 |
-| integrator | 8000 | 400 |
-| writer | 4000 | 2500 |
-| pilot | 4000 | 100 |
+| axis | REF (CLI units) |
+|---|---|
+| automator | 25000 |
+| researcher | 15000 |
+| coder | 15000 |
+| integrator | 8000 |
+| writer | 4000 |
+| pilot | 4000 |
 
-**Honest calibration note:** the v1 anchors are derived from a single heavy daily user's corpus (~426 sessions / ~57k tool calls over ~6 weeks, snapshot 2026-06-12). They represent "heavy daily user" as one data point, not a population study. Expect recalibration in later versions.
+**Web** uses **self-relative shape** scoring instead: your strongest axis is the reference (100) and the rest are proportional (`(x / max) ^ 0.7`). Volume is carried by the **level**, not the axis heights — so a casual user still gets a full, varied radar (like an RPG class whose stat *shape* is the same at level 5 and level 50), rather than a flat low card. Web axes are counted from **your own messages** (what you ask for), never from how much Claude wrote back. The web card is a rough estimate and is not comparable to a CLI card.
+
+**Honest calibration note:** the CLI anchors are derived from a single heavy daily user's corpus (~426 sessions / ~57k tool calls, snapshot 2026-06-12) — one data point, not a population study. Expect recalibration in later versions.
 
 Level: `floor(sqrt(effort / 25))`, where effort = total tool calls (CLI) or total messages × 4 (web). Minimum level 1.
 

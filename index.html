@@ -500,60 +500,98 @@
 
   /* ---------- claude.ai export parser (BETA, defensive) ---------- */
 
-  function msgText(m) {
-    if (!m || typeof m !== 'object') return '';
-    if (typeof m.text === 'string' && m.text) return m.text;
-    if (Array.isArray(m.content)) {
-      return m.content.map(function (c) {
-        return (c && typeof c.text === 'string') ? c.text : '';
-      }).join('\n');
+  // Robust text extraction across claude.ai export schemas:
+  // conversations.json -> array of {chat_messages:[{sender, text|content[]}]}
+  // design_chats/*.json -> {messages:[{role, content:{...}}]} (content is a nested object)
+  function deepText(v, depth) {
+    if (depth > 6 || v == null) return '';
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)) return v.map(function (x) { return deepText(x, depth + 1); }).join('\n');
+    if (typeof v === 'object') {
+      var out = [];
+      for (var k in v) {
+        if (k === 'citations' || k === 'files' || k === 'id' || k === 'uuid') continue;
+        out.push(deepText(v[k], depth + 1));
+      }
+      return out.join('\n');
     }
     return '';
   }
-
-  var RX_RESEARCH = /\?|\b(search|why|how|find)\b|หา|ค้น|ทำไม|https?:\/\//i;
-  var RX_AUTO = /\b(script|automation|cron|bot|workflow)\b|อัตโนมัติ/i;
-  var RX_INTEG = /\b(api|integration|mcp|webhook)\b|เชื่อมต่อ/i;
-  var RX_PILOT = /\b(browser|selenium|playwright)\b|เบราว์เซอร์/i;
-
-  function parseClaudeExport(json) {
-    var convs = null;
+  function msgText(m) {
+    if (!m || typeof m !== 'object') return '';
+    if (typeof m.text === 'string' && m.text) return m.text;
+    return deepText(m.content, 0);
+  }
+  function roleOf(m) {
+    var r = (m && (m.sender || m.role)) || '';
+    return (r === 'human' || r === 'user') ? 'human' : (r === 'assistant' ? 'assistant' : 'other');
+  }
+  // Normalize any export JSON into a flat [{role, text}] list. Returns [] for non-chat JSON.
+  function extractMessages(json) {
+    var convs = [];
     if (Array.isArray(json)) convs = json;
-    else if (json && typeof json === 'object' && Array.isArray(json.conversations)) convs = json.conversations;
-    if (!convs) return null;
-
-    var raw = { automator: 0, researcher: 0, coder: 0, integrator: 0, writer: 0, pilot: 0 };
-    var msgCount = 0;
-    var assistantChars = 0;
-
-    convs.forEach(function (conv) {
-      var msgs = (conv && Array.isArray(conv.chat_messages)) ? conv.chat_messages : [];
-      msgs.forEach(function (m) {
-        var text = msgText(m);
-        var sender = m && m.sender;
-        msgCount++;
-        if (sender === 'assistant') {
-          assistantChars += text.length;
-          var fences = (text.match(/```/g) || []).length;
-          raw.coder += Math.floor(fences / 2);
-        }
-        if (sender === 'human' && RX_RESEARCH.test(text)) raw.researcher++;
-        if (RX_AUTO.test(text)) raw.automator++;
-        if (RX_INTEG.test(text)) raw.integrator++;
-        if (RX_PILOT.test(text)) raw.pilot++;
-      });
+    else if (json && Array.isArray(json.conversations)) convs = json.conversations;
+    else if (json && (Array.isArray(json.chat_messages) || Array.isArray(json.messages))) convs = [json];
+    var msgs = [];
+    convs.forEach(function (cv) {
+      var ms = (cv && (cv.chat_messages || cv.messages)) || [];
+      if (!Array.isArray(ms)) return;
+      ms.forEach(function (m) { msgs.push({ role: roleOf(m), text: msgText(m) }); });
     });
+    return msgs;
+  }
 
-    raw.writer = assistantChars / 4000;
+  // Behavior heuristics — scored from the USER's (human) messages, never from how much
+  // Claude wrote back. Each axis = how many of your messages show that kind of intent.
+  var RX = {
+    researcher: /\?|\b(why|how|what|when|which|compare|explain|difference|search|find|research|vs)\b|หา|ค้น|ทำไม|อะไร|เปรียบเทียบ|อธิบาย|ยังไง|ไหม/i,
+    writer: /\b(write|draft|rewrite|reword|email|essay|article|blog|story|poem|caption|translate|summari[sz]e|outline)\b|เขียน|ร่าง|แปล|สรุป|บทความ|อีเมล|เรียงความ|แคปชั่น/i,
+    coder: /```|\b(code|coding|function|bug|debug|error|python|javascript|typescript|css|html|sql|react|component|npm|git|regex|refactor)\b|โค้ด|ดีบัก/i,
+    automator: /\b(automate|automation|workflow|cron|schedule|batch|pipeline|bot|agent|step.by.step|steps|every day|do this for me)\b|อัตโนมัติ|ทุกวัน|ตั้งเวลา|เป็นขั้นตอน|ทำให้หน่อย/i,
+    integrator: /\b(api|integrate|integration|webhook|connect|database|supabase|notion|slack|sheets?|zapier|upload|import|export|sync|oauth|endpoint)\b|เชื่อมต่อ|เชื่อม|ฐานข้อมูล/i,
+    pilot: /\b(browser|website|web ?page|url|link|scrape|crawl|navigate|screenshot|dom|selector)\b|เว็บไซต์|เบราว์เซอร์|หน้าเว็บ|ลิงก์/i,
+  };
+
+  // msgs: flat [{role,text}] list (already merged across all files in the export)
+  function scoreMessages(msgs) {
+    if (!msgs || !msgs.length) return null;
+    var raw = { automator: 0, researcher: 0, coder: 0, integrator: 0, writer: 0, pilot: 0 };
+    var human = 0;
+    msgs.forEach(function (m) {
+      if (m.role !== 'human') return;
+      human++;
+      var t = m.text || '';
+      for (var k in RX) { if (RX[k].test(t)) raw[k]++; }
+    });
+    if (human === 0) return null;
     return {
       raw: raw,
-      totals: { sessions: convs.length, toolCalls: 0, userMsgs: msgCount },
+      totals: { sessions: 0, toolCalls: 0, userMsgs: msgs.length },
     };
+  }
+
+  function countConvs(json) {
+    if (Array.isArray(json)) return json.length;
+    if (json && Array.isArray(json.conversations)) return json.conversations.length;
+    if (json && (Array.isArray(json.chat_messages) || Array.isArray(json.messages))) return 1;
+    return 0;
+  }
+
+  function buildResult(msgs, convCount) {
+    var r = scoreMessages(msgs);
+    if (!r) return null;
+    r.totals.sessions = convCount || 0;
+    return r;
+  }
+
+  // Single-JSON path (e.g. a lone conversations.json dropped in)
+  function parseClaudeExport(json) {
+    return buildResult(extractMessages(json), countConvs(json));
   }
 
   function finishParse(parsed) {
     if (!parsed) { toast(t('badFormat'), true); return; }
-    var stats = S.scoreAxes(parsed.raw, 'web');
+    var stats = S.scoreAxesShape(parsed.raw);
     var encoded = S.encodeShare({ v: 1, src: 'web', stats: stats, totals: parsed.totals });
     window.location.hash = '#s=' + encoded;
   }
@@ -563,17 +601,25 @@
   }
 
   // claude.ai exports arrive as a .zip (sometimes a .dms = renamed .zip). Accept them
-  // directly so the user never has to unzip — find conversations.json inside, in-browser.
+  // directly so the user never has to unzip. The export holds conversations.json PLUS
+  // design_chats/* and projects/* (different schemas) — merge every chat-bearing JSON so
+  // the card reflects the user's whole claude.ai life, not just regular chats.
   function handleZip(buf) {
     if (!window.fflate || !fflate.unzipSync) { toast(t('badFormat'), true); return; }
     var files;
     try { files = fflate.unzipSync(new Uint8Array(buf)); } catch (e) { toast(t('badFormat'), true); return; }
-    var key = Object.keys(files).filter(function (n) { return /conversations\.json$/i.test(n); })[0]
-      || Object.keys(files).filter(function (n) { return /\.json$/i.test(n); })[0];
-    if (!key) { toast(t('badFormat'), true); return; }
-    var text;
-    try { text = fflate.strFromU8(files[key]); } catch (e) { toast(t('badFormat'), true); return; }
-    finishParse(parseJsonText(text));
+    var msgs = [], convs = 0, sawJson = false;
+    Object.keys(files).forEach(function (n) {
+      if (!/\.json$/i.test(n)) return;
+      if (/(^|\/)(users|memories)\.json$/i.test(n)) return; // not conversations
+      sawJson = true;
+      var json;
+      try { json = JSON.parse(fflate.strFromU8(files[n])); } catch (e) { return; }
+      msgs = msgs.concat(extractMessages(json));
+      convs += countConvs(json);
+    });
+    if (!sawJson) { toast(t('badFormat'), true); return; }
+    finishParse(buildResult(msgs, convs));
   }
 
   function handleFile(file) {
