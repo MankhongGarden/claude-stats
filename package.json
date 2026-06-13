@@ -1,6 +1,6 @@
 {
   "name": "claude-character-sheet",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Turn your Claude usage into an MMORPG-style character sheet (radar chart of 6 stats + class + level). Local-only parsing, zero dependencies.",
   "type": "commonjs",
   "bin": {
