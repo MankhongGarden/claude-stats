@@ -106,7 +106,12 @@
   .level { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #fbbf24; }
   .class-name { font-size: 34px; font-weight: 800; line-height: 1.15; margin-bottom: 2px;
     background: linear-gradient(90deg, #6ee7b7, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .class-sub { font-size: 15px; color: #7da894; font-weight: 300; margin-bottom: 20px; }
+  .class-sub { font-size: 15px; color: #7da894; font-weight: 300; margin-bottom: 14px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .badges:empty { display: none; }
+  .badge-chip { display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; color: #fbbf24;
+    background: #1a130699; border: 1px solid #fbbf2455; border-radius: 999px; padding: 4px 11px; }
   .body { display: grid; grid-template-columns: 420px 1fr; gap: 32px; align-items: center; }
   .chart-wrap { position: relative; max-width: 100%; }
   .chart-wrap canvas { max-width: 100%; height: auto; }
@@ -197,7 +202,7 @@
     </div>
   </div>
   <div class="demo-row">
-    <a id="demoLink" href="#s=eyJ2IjoxLCJzcmMiOiJjbGkiLCJzdGF0cyI6eyJhdXRvbWF0b3IiOjkxLCJyZXNlYXJjaGVyIjo5NCwiY29kZXIiOjkzLCJpbnRlZ3JhdG9yIjo3MCwid3JpdGVyIjo4OCwicGlsb3QiOjUxfSwidG90YWxzIjp7InNlc3Npb25zIjo0MzQsInRvb2xDYWxscyI6NTc2MTQsInVzZXJNc2dzIjo2ODQ5MX19">ดูการ์ดตัวอย่างก่อน →</a>
+    <a id="demoLink" href="#s=eyJ2IjoxLCJzcmMiOiJjbGkiLCJzdGF0cyI6eyJhdXRvbWF0b3IiOjkxLCJyZXNlYXJjaGVyIjo5NCwiY29kZXIiOjkzLCJpbnRlZ3JhdG9yIjo3MCwid3JpdGVyIjo4OCwicGlsb3QiOjUxfSwidG90YWxzIjp7InNlc3Npb25zIjo0MzQsInRvb2xDYWxscyI6NTc2MTQsInVzZXJNc2dzIjo2ODQ5MX0sImJhZGdlcyI6WyJuaWdodC1vd2wiLCJtYXJhdGhvbmVyIiwic3RyZWFrIl0sInN0cmVhayI6MTR9">ดูการ์ดตัวอย่างก่อน →</a>
   </div>
 </div>
 
@@ -212,6 +217,7 @@
     </div>
     <div class="class-name" id="className"></div>
     <div class="class-sub" id="classSub"></div>
+    <div class="badges" id="badges"></div>
     <div class="body">
       <div class="chart-wrap"><canvas id="radar" width="420" height="400"></canvas></div>
       <ul class="stats-list" id="statsList"></ul>
@@ -420,6 +426,18 @@
     document.getElementById('lv').textContent = String(lv);
     document.getElementById('srcBadge').textContent = isWeb ? 'WEB · BETA' : 'CLI';
 
+    var badgesEl = document.getElementById('badges');
+    while (badgesEl.firstChild) badgesEl.removeChild(badgesEl.firstChild);
+    (payload.badges || []).forEach(function (k) {
+      var b = S.BADGES[k];
+      if (!b) return;
+      var chip = el('span', 'badge-chip');
+      var lbl = (lang === 'th' ? b.th : b.en) + (k === 'streak' && payload.streak ? ' ' + payload.streak + (lang === 'th' ? ' วัน' : 'd') : '');
+      chip.appendChild(el('span', null, b.emoji));
+      chip.appendChild(el('span', null, lbl));
+      badgesEl.appendChild(chip);
+    });
+
     var list = document.getElementById('statsList');
     while (list.firstChild) list.removeChild(list.firstChild);
     S.AXES.forEach(function (k) {
@@ -536,7 +554,7 @@
     convs.forEach(function (cv) {
       var ms = (cv && (cv.chat_messages || cv.messages)) || [];
       if (!Array.isArray(ms)) return;
-      ms.forEach(function (m) { msgs.push({ role: roleOf(m), text: msgText(m) }); });
+      ms.forEach(function (m) { msgs.push({ role: roleOf(m), text: msgText(m), ts: (m && (m.created_at || m.timestamp)) || null }); });
     });
     return msgs;
   }
@@ -581,6 +599,11 @@
     var r = scoreMessages(msgs);
     if (!r) return null;
     r.totals.sessions = convCount || 0;
+    var stamps = [];
+    for (var i = 0; i < msgs.length; i++) { if (msgs[i].ts) stamps.push(msgs[i].ts); }
+    var b = S.computeBadges(stamps);
+    r.badges = b.badges;
+    r.streak = b.streak;
     return r;
   }
 
@@ -592,7 +615,7 @@
   function finishParse(parsed) {
     if (!parsed) { toast(t('badFormat'), true); return; }
     var stats = S.scoreAxesShape(parsed.raw);
-    var encoded = S.encodeShare({ v: 1, src: 'web', stats: stats, totals: parsed.totals });
+    var encoded = S.encodeShare({ v: 1, src: 'web', stats: stats, totals: parsed.totals, badges: parsed.badges || [], streak: parsed.streak || 0 });
     window.location.hash = '#s=' + encoded;
   }
 

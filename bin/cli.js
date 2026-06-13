@@ -111,6 +111,7 @@ function processFile(filePath, acc) {
         return;
       }
       if (!obj || typeof obj !== 'object') return;
+      if (typeof obj.timestamp === 'string' && acc.stamps.length < 200000) acc.stamps.push(obj.timestamp);
       if (obj.type === 'user') {
         acc.userMessages++;
         return;
@@ -180,6 +181,7 @@ async function main() {
     userMessages: 0,
     assistantMessages: 0,
     textChars: 0,
+    stamps: [],
     units: { automator: 0, researcher: 0, coder: 0, integrator: 0, writer: 0, pilot: 0 }
   };
 
@@ -193,13 +195,18 @@ async function main() {
   const lv = scoring.level(acc.toolCalls);
   const top = scoring.topAxis(stats);
   const cls = scoring.CLASSES[top];
+  const badgeInfo = scoring.computeBadges(acc.stamps);
   const totals = {
     sessions: files.length,
     toolCalls: acc.toolCalls,
     userMessages: acc.userMessages,
     assistantMessages: acc.assistantMessages
   };
-  const payload = { v: 1, src: 'cli', stats: stats, totals: { sessions: totals.sessions, toolCalls: totals.toolCalls, userMsgs: totals.userMessages } };
+  const payload = {
+    v: 1, src: 'cli', stats: stats,
+    totals: { sessions: totals.sessions, toolCalls: totals.toolCalls, userMsgs: totals.userMessages },
+    badges: badgeInfo.badges, streak: badgeInfo.streak
+  };
   const shareUrl = SITE_URL + '#s=' + scoring.encodeShare(payload);
 
   if (args.json) {
@@ -211,6 +218,8 @@ async function main() {
       level: lv,
       topAxis: top,
       class: cls[0],
+      badges: badgeInfo.badges,
+      streak: badgeInfo.streak,
       totals: totals
     };
     if (args.share) out.shareUrl = shareUrl;
@@ -232,6 +241,13 @@ async function main() {
     lines.push('  ' + name + bar(stats[axis]) + ' ' + score);
   }
   lines.push('  ' + '-'.repeat(46));
+  if (badgeInfo.badges.length) {
+    lines.push('  ' + badgeInfo.badges.map(function (k) {
+      var b = scoring.BADGES[k];
+      return (b ? b.emoji + ' ' + b.en : k) + (k === 'streak' ? ' ' + badgeInfo.streak + 'd' : '');
+    }).join('   '));
+    lines.push('  ' + '-'.repeat(46));
+  }
   lines.push('  sessions ' + totals.sessions +
     ' | tool calls ' + totals.toolCalls +
     ' | your msgs ' + totals.userMessages);
