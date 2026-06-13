@@ -152,9 +152,19 @@ async function main() {
 
   const dataDir = resolveDataDir(args);
   if (!dataDir) {
+    const checked = [];
+    if (args.dir) checked.push(args.dir);
+    else {
+      if (process.env.CLAUDE_CONFIG_DIR) checked.push(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'));
+      checked.push(path.join(os.homedir(), '.claude', 'projects'));
+    }
     console.error('Could not find a Claude Code projects directory.');
-    console.error('Looked for: ' + (args.dir ? args.dir : '$CLAUDE_CONFIG_DIR/projects and ~/.claude/projects'));
-    console.error('If your data lives elsewhere, point at it with: --dir <path>');
+    console.error('Checked these path(s):');
+    for (const c of checked) console.error('  - ' + c);
+    console.error('');
+    console.error('If you use a custom config dir, run with --dir <path>. Your transcripts live in the');
+    console.error("'projects' folder next to Claude Code's settings.json (commonly ~/.claude/projects,");
+    console.error('or $CLAUDE_CONFIG_DIR/projects).');
     process.exit(1);
   }
 
@@ -210,7 +220,7 @@ async function main() {
 
   const lines = [];
   lines.push('');
-  lines.push('  CLAUDE STATUS CHECK');
+  lines.push('  CLAUDE CHARACTER SHEET');
   lines.push('  ' + '-'.repeat(46));
   lines.push('  ' + cls[0] + '  LV ' + lv);
   lines.push('  ' + (cls[2] || cls[1]));
@@ -229,7 +239,7 @@ async function main() {
 
   if (args.share) {
     console.log('');
-    console.log('  Share your card (only the 6 aggregate scores are in this URL):');
+    console.log('  Share your card (URL carries only 6 scores + 3 totals, never message text):');
     console.log('  ' + shareUrl);
   }
   console.log('');

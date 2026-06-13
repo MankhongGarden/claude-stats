@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claude Status Check</title>
 <meta name="description" content="เช็คสเตตัสการใช้ Claude ของคุณ — radar 6 สาย + class + level สไตล์ MMORPG · ข้อมูลไม่ออกจากเครื่อง">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a120e'/%3E%3Cpolygon points='50,15 80,35 72,75 28,75 20,35' fill='none' stroke='%2334d399' stroke-width='6'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<script src="lib/chart.umd.min.js"></script>
+<script src="lib/html-to-image.min.js"></script>
 <script src="lib/scoring.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,7 +46,7 @@
   .cmd {
     flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #6ee7b7;
     background: #122019; border: 1px solid #1f4435; border-radius: 8px; padding: 11px 12px;
-    white-space: nowrap; overflow-x: auto;
+    white-space: normal; word-break: break-all; line-height: 1.4;
   }
   .btn {
     font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
@@ -100,7 +101,7 @@
   .stats-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
   .stats-list li { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 12px; }
   .stat-label { font-size: 14px; font-weight: 600; color: #c9e8d8; }
-  .stat-label small { display: block; font-size: 10.5px; font-weight: 300; color: #5d8371; }
+  .stat-label small { display: block; font-size: 10.5px; font-weight: 300; color: #7ba894; }
   .bar { height: 7px; background: #122019; border-radius: 4px; overflow: hidden; }
   .bar i { display: block; height: 100%; border-radius: 4px;
     background: linear-gradient(90deg, #10b981, #6ee7b7); }
@@ -110,7 +111,7 @@
   .totals { display: flex; gap: 26px; }
   .totals div { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5d8371; }
   .totals b { display: block; font-size: 17px; color: #e8f5ee; font-weight: 700; }
-  .brand { font-size: 11px; letter-spacing: 2px; color: #3d5c4c; }
+  .brand { font-size: 11px; letter-spacing: 2px; color: #6f9886; font-weight: 600; }
 
   .card-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
 
@@ -143,6 +144,10 @@
     .totals { flex-wrap: wrap; gap: 16px; }
     .brand { word-break: break-all; }
     .class-name { font-size: 27px; }
+    .stats-list li { grid-template-columns: 1fr auto; grid-template-areas: "label val" "bar bar"; row-gap: 7px; column-gap: 12px; align-items: center; }
+    .stats-list .stat-label { grid-area: label; }
+    .stats-list .stat-val { grid-area: val; }
+    .stats-list .bar { grid-area: bar; width: 100%; }
   }
 </style>
 </head>
@@ -152,8 +157,8 @@
 
 <div id="landing" class="landing hidden">
   <div class="hero">
-    <div class="kicker">MMORPG Character Sheet · For Claude Users</div>
-    <h1>Claude Status Check</h1>
+    <div class="kicker" id="kicker">MMORPG-style stats · earned from your real usage, not a quiz</div>
+    <h1 id="h1">Your Claude Character Sheet</h1>
     <p id="heroDesc">คุณใช้ Claude สายไหน? เช็คสเตตัส 6 ด้าน รับ class + level ของตัวเอง — ข้อมูลดิบไม่ออกจากเครื่องคุณ</p>
   </div>
   <div class="entry-grid">
@@ -164,7 +169,8 @@
         <div class="cmd" id="npxCmd">npx github:MankhongGarden/claude-stats</div>
         <button class="btn" id="copyCmdBtn" type="button">คัดลอก</button>
       </div>
-      <div class="privacy"><b>Privacy:</b> <span id="privacy1Text">สแกนในเครื่องเท่านั้น · ลิงก์แชร์มีแค่ตัวเลขสรุป 6 ค่า</span></div>
+      <div class="steps" id="nodeNote">Node 18+ · อ่าน source ได้ ~250 บรรทัด</div>
+      <div class="privacy"><b>Privacy:</b> <span id="privacy1Text">ไฟล์ในเครื่องถูกอ่านในเครื่องเท่านั้น ไม่อัปโหลด · ลิงก์แชร์มีแค่คะแนนสรุป</span></div>
     </div>
     <div class="entry">
       <h2><span id="entry2Title">สาย claude.ai</span> <span class="badge">BETA</span></h2>
@@ -206,7 +212,7 @@
   <div class="card-actions">
     <button class="btn" id="pngBtn" type="button">ดาวน์โหลดการ์ด PNG</button>
     <button class="btn ghost" id="copyLinkBtn" type="button">คัดลอกลิงก์แชร์</button>
-    <button class="btn ghost" id="resetBtn" type="button">เริ่มใหม่</button>
+    <button class="btn" id="resetBtn" type="button">เริ่มใหม่</button>
   </div>
 </div>
 
@@ -227,10 +233,13 @@
 
   var STR = {
     th: {
+      kicker: 'สเตตัสสไตล์ MMORPG · คำนวณจากการใช้งานจริง ไม่ใช่แบบทดสอบ',
+      h1: 'การ์ดตัวละคร Claude ของคุณ',
       heroDesc: 'คุณใช้ Claude สายไหน? เช็คสเตตัส 6 ด้าน รับ class + level ของตัวเอง — ข้อมูลดิบไม่ออกจากเครื่องคุณ',
       entry1Title: 'สาย Claude Code',
       entry1Sub: 'รันคำสั่งเดียวใน terminal — สแกน transcript ในเครื่อง แล้วได้ลิงก์การ์ดทันที',
-      privacy1Text: 'สแกนในเครื่องเท่านั้น · ลิงก์แชร์มีแค่ตัวเลขสรุป 6 ค่า',
+      nodeNote: 'Node 18+ · อ่าน source ได้ ~250 บรรทัด',
+      privacy1Text: 'ไฟล์ในเครื่องถูกอ่านในเครื่องเท่านั้น ไม่อัปโหลด · ลิงก์แชร์มีแค่คะแนนสรุป',
       entry2Title: 'สาย claude.ai',
       entry2Sub: 'ใช้ไฟล์ export จาก claude.ai — วิเคราะห์ในเบราว์เซอร์นี้ทั้งหมด',
       dropBig: 'วางไฟล์ conversations.json ที่นี่',
@@ -241,10 +250,11 @@
       copyCmdBtn: 'คัดลอก',
       pngBtn: 'ดาวน์โหลดการ์ด PNG',
       copyLinkBtn: 'คัดลอกลิงก์แชร์',
-      resetBtn: 'เริ่มใหม่',
+      resetBtn: 'สร้างการ์ดของคุณ →',
+      webEstimate: '⚠ ประเมินคร่าวๆ จากข้อความ · เทียบกับการ์ดสาย CLI ไม่ได้',
       badLink: 'ลิงก์ไม่ถูกต้องหรือเสียหาย — กลับสู่หน้าแรก',
       copiedCmd: 'คัดลอกคำสั่งแล้ว — ไปวางใน terminal ได้เลย',
-      copiedLink: 'คัดลอกลิงก์แล้ว — ในลิงก์มีแค่ตัวเลขสรุป 6 ค่า',
+      copiedLink: 'คัดลอกลิงก์แล้ว — ในลิงก์มีแค่คะแนน 6 ค่า + ยอดรวม 3 ตัว (session · tool call · ข้อความ)',
       copyFail: 'คัดลอกไม่สำเร็จ — copy เองได้เลย: ',
       readFail: 'อ่านไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง',
       badFormat: 'รูปแบบไฟล์ไม่ตรงที่คาด (parser ยังเป็น beta)',
@@ -255,10 +265,13 @@
       scoringFail: 'โหลด lib/scoring.js ไม่สำเร็จ'
     },
     en: {
+      kicker: 'MMORPG-style stats · earned from your real usage, not a quiz',
+      h1: 'Your Claude Character Sheet',
       heroDesc: 'Which Claude build are you? Check your 6 stats and get your class + level — raw data never leaves your machine.',
       entry1Title: 'Claude Code users',
       entry1Sub: 'One command in your terminal — scans local transcripts, prints your card and a share link.',
-      privacy1Text: 'Scans locally only · the share link carries just 6 aggregate numbers',
+      nodeNote: 'Node 18+ · source is ~250 lines, read before you run',
+      privacy1Text: 'Local files are read on your machine and never uploaded · the share link carries only summary scores',
       entry2Title: 'claude.ai users',
       entry2Sub: 'Use your claude.ai data export — analyzed entirely in this browser.',
       dropBig: 'Drop conversations.json here',
@@ -269,10 +282,11 @@
       copyCmdBtn: 'Copy',
       pngBtn: 'Download card PNG',
       copyLinkBtn: 'Copy share link',
-      resetBtn: 'Start over',
+      resetBtn: 'Make your own →',
+      webEstimate: '⚠ Rough estimate inferred from text · not comparable to CLI cards',
       badLink: 'Invalid or corrupted link — back to home',
       copiedCmd: 'Command copied — paste it in your terminal',
-      copiedLink: 'Link copied — it carries only the 6 aggregate numbers',
+      copiedLink: 'Link copied — it carries only the 6 scores + 3 totals (sessions · tool calls · messages)',
       copyFail: 'Copy failed — grab it manually: ',
       readFail: 'Could not read the file, please try again',
       badFormat: 'Unexpected file format (the parser is still beta)',
@@ -298,7 +312,7 @@
 
   function applyLang() {
     document.documentElement.lang = lang;
-    ['heroDesc', 'entry1Title', 'entry1Sub', 'privacy1Text', 'entry2Title', 'entry2Sub',
+    ['kicker', 'h1', 'heroDesc', 'entry1Title', 'entry1Sub', 'nodeNote', 'privacy1Text', 'entry2Title', 'entry2Sub',
       'dropBig', 'dropHint', 'privacy2Text', 'demoLink',
       'copyCmdBtn', 'pngBtn', 'copyLinkBtn', 'resetBtn'].forEach(function (id) {
       var node = document.getElementById(id);
@@ -379,7 +393,7 @@
     var lv = S.level(effort);
 
     document.getElementById('className').textContent = cls[0];
-    document.getElementById('classSub').textContent = (lang === 'th' ? cls[1] : cls[2]) || cls[1];
+    document.getElementById('classSub').textContent = isWeb ? t('webEstimate') : ((lang === 'th' ? cls[1] : cls[2]) || cls[1]);
     document.getElementById('lv').textContent = String(lv);
     document.getElementById('srcBadge').textContent = isWeb ? 'WEB · BETA' : 'CLI';
 
@@ -443,6 +457,10 @@
         },
       },
     });
+
+    var c = document.getElementById('radar');
+    c.setAttribute('role', 'img');
+    c.setAttribute('aria-label', S.AXES.map(function (k) { return S.META[k].en + ' ' + stats[k]; }).join(', '));
   }
 
   /* ---------- routing ---------- */
@@ -470,10 +488,10 @@
     return '';
   }
 
-  var RX_RESEARCH = /\?|หา|ค้น|search|why|ทำไม|คือ|https?:\/\//i;
-  var RX_AUTO = /script|automation|cron|bot|workflow|อัตโนมัติ/i;
-  var RX_INTEG = /api|integration|mcp|webhook|เชื่อมต่อ/i;
-  var RX_PILOT = /browser|selenium|playwright|เบราว์เซอร์/i;
+  var RX_RESEARCH = /\?|\b(search|why|how|find)\b|หา|ค้น|ทำไม|https?:\/\//i;
+  var RX_AUTO = /\b(script|automation|cron|bot|workflow)\b|อัตโนมัติ/i;
+  var RX_INTEG = /\b(api|integration|mcp|webhook)\b|เชื่อมต่อ/i;
+  var RX_PILOT = /\b(browser|selenium|playwright)\b|เบราว์เซอร์/i;
 
   function parseClaudeExport(json) {
     var convs = null;

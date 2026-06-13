@@ -46,7 +46,8 @@ How to get the file: claude.ai → Settings → Privacy → Export data → the 
 
 - **CLI:** transcripts are read locally and never leave your machine. Only the 6 aggregate scores plus three totals (sessions, tool calls, message count) are encoded into the share URL hash — the level shown on the card is derived from those totals. Nothing else travels.
 - **Web upload:** `conversations.json` is parsed entirely in your browser (client-side JavaScript). There is no backend and no upload endpoint — there is nowhere for the file to go.
-- **Share URL:** contains only the aggregated numbers, base64url-encoded in the `#s=` hash. Anyone with the link sees your stat card, never your conversations.
+- **Share URL:** contains only the aggregated numbers (6 scores + 3 totals), base64url-encoded in the `#s=` hash. Anyone with the link sees your stat card, never your conversations.
+- The web app vendors its JS libraries locally — opening the page makes no third-party API calls except Google Fonts (CSS only).
 
 ## How scoring works
 
@@ -97,13 +98,13 @@ Your top axis decides your class (ties break by axis order):
 Levels follow a square-root curve against total volume — they're meant to climb slowly. The anchors are calibrated against a very heavy user, so a "normal" usage pattern landing at level 5–15 is expected, not a bug.
 
 **Does this upload my chats anywhere?**
-No. There is no server. CLI parsing happens on your machine; web parsing happens in your browser. The only thing that ever travels is the share URL you choose to copy, which contains 6 aggregate scores and totals.
+No. There is no server. CLI parsing happens on your machine; web parsing happens in your browser. The only thing that ever travels is the share URL you choose to copy, which contains 6 scores + 3 totals (sessions, tool calls, message count) — never message text.
 
 **The web upload says my file format isn't recognized.**
 The claude.ai parser is beta. Export formats can change. Please open an issue with a description of the file's top-level structure.
 
 **Can I compare with friends?**
-Yes — scores use fixed anchors (not self-relative), so two people's cards are directly comparable. Swap share URLs or PNG cards.
+CLI cards compare to CLI cards — scores use fixed anchors (not self-relative), so two Claude Code users' cards are directly comparable. The web (claude.ai) card is a **rough text-inferred estimate** and is **not** comparable to a CLI card; the `CLI` / `WEB · BETA` badge next to the level tells you which kind you're looking at.
 
 ---
 
