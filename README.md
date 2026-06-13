@@ -19,6 +19,10 @@ claude, claude-code, anthropic, cli, github-pages, radar-chart, character-sheet,
 
 ```bash
 npx github:MankhongGarden/claude-stats
+# or, once published to npm:
+npx claude-character-sheet
+# pin to an immutable release for reproducibility:
+npx github:MankhongGarden/claude-stats#v1.0.0
 ```
 
 Scans your local Claude Code transcripts (`~/.claude/projects` or `$CLAUDE_CONFIG_DIR/projects`), prints a terminal stat card, and gives you a share URL that opens the web card.

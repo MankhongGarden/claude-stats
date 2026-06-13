@@ -1,11 +1,17 @@
 {
-  "name": "claude-stats",
+  "name": "claude-character-sheet",
   "version": "1.0.0",
-  "description": "Claude Status Check - analyze your Claude usage as an MMORPG-style character sheet (radar chart of 6 stats + class + level). Local-only parsing, zero dependencies.",
+  "description": "Turn your Claude usage into an MMORPG-style character sheet (radar chart of 6 stats + class + level). Local-only parsing, zero dependencies.",
   "type": "commonjs",
   "bin": {
     "claude-stats": "bin/cli.js"
   },
+  "files": [
+    "bin/cli.js",
+    "lib/scoring.js",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18"
   },
